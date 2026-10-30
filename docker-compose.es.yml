@@ -1,0 +1,20 @@
+# Overlay for the demo: runs the prebuilt image with the local fork (Spanish + gate module) mounted on top.
+# Usage: docker compose --env-file .env.demo -f docker-compose.demo.yml -f docker-compose.es.yml up -d
+x-fork-mounts: &fork-mounts
+  - ./backend/app:/var/www/html/backend/app:ro
+  - ./backend/lang:/var/www/html/backend/lang:ro
+  - ./backend/config/app.php:/var/www/html/backend/config/app.php:ro
+  - ./backend/database/migrations:/var/www/html/backend/database/migrations:ro
+  - ./backend/database/seeders:/var/www/html/backend/database/seeders:ro
+  - ./backend/routes:/var/www/html/backend/routes:ro
+  - ./backend/resources/views:/var/www/html/backend/resources/views:ro
+  - ./backend/config/branding.php:/var/www/html/backend/config/branding.php:ro
+  - ./backend/public/images/branding:/var/www/html/backend/public/images/branding:ro
+
+services:
+  app:
+    volumes: *fork-mounts
+  queue:
+    volumes: *fork-mounts
+  scheduler:
+    volumes: *fork-mounts

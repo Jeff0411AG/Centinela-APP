@@ -1,0 +1,145 @@
+name: visitorportal-sso-test
+
+services:
+  web:
+    image: visitorportal-sso-web:test
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: sso-test
+    command: >
+      sh -lc "
+      test -f vendor/autoload.php &&
+      test -f public/build/manifest.json &&
+      mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache &&
+      chown -R www-data:www-data storage bootstrap/cache &&
+      php artisan migrate:fresh --force &&
+      php artisan visitorportal:sync-permissions &&
+      apache2-foreground
+      "
+    environment:
+      APP_NAME: VisitorPortal
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: "false"
+      APP_URL: http://web
+      APP_TIMEZONE: Europe/Berlin
+      APP_LOCALE: en
+      APP_FALLBACK_LOCALE: en
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mariadb
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: visitorportal
+      DB_USERNAME: visitor
+      DB_PASSWORD: visitor_pw
+      SESSION_DRIVER: database
+      SESSION_ENCRYPT: "false"
+      SESSION_SECURE_COOKIE: "false"
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailhog
+      MAIL_PORT: "1025"
+      MAIL_FROM_ADDRESS: visitorportal@example.test
+      MAIL_FROM_NAME: VisitorPortal
+      AUTH_MODE: local_and_sso
+      SSO_ENABLED: "true"
+      SSO_DRIVER: oidc
+      OIDC_DISPLAY_NAME: Local Keycloak
+      OIDC_ISSUER_URL: http://keycloak:8080/realms/visitorportal
+      OIDC_CLIENT_ID: visitorportal
+      OIDC_CLIENT_SECRET: visitorportal-secret
+      OIDC_REDIRECT_URI: http://web/auth/oidc/callback
+      OIDC_SCOPES: openid profile email
+      OIDC_REQUIRE_VERIFIED_EMAIL: "true"
+      OIDC_PROVISIONING_MODE: auto
+      OIDC_SYNC_USER_PROFILE: "true"
+      OIDC_STORE_CLAIMS: "true"
+      OIDC_SYNC_ROLES: "false"
+      OIDC_LOGOUT_MODE: local
+      GOTENBERG_URL: http://gotenberg:3000
+      RUN_SETUP: "false"
+    volumes:
+      - sso_storage:/var/www/html/backend/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      gotenberg:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fopen(\"http://127.0.0.1/up\", \"r\") ? 0 : 1);'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: visitorportal
+      MARIADB_USER: visitor
+      MARIADB_PASSWORD: visitor_pw
+      MARIADB_ROOT_PASSWORD: root_pw
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -proot_pw"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.8
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./backend/tests/Fixtures/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  sso-smoke:
+    image: visitorportal-sso-smoke:test
+    build:
+      context: .
+      dockerfile: docker/sso-test/Dockerfile.smoke
+    environment:
+      BASE_URL: http://web
+      KEYCLOAK_URL: http://keycloak:8080
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: visitorportal
+      DB_USERNAME: visitor
+      DB_PASSWORD: visitor_pw
+    command: >
+      bash -lc "
+      timeout 120 sh -c 'until curl -fsS http://keycloak:8080/realms/visitorportal/.well-known/openid-configuration >/dev/null; do sleep 2; done' &&
+      timeout 120 sh -c 'until curl -fsS http://web/login >/dev/null; do sleep 2; done' &&
+      npm run test:e2e:sso
+      "
+    depends_on:
+      web:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.32.0
+
+volumes:
+  sso_storage:

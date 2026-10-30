@@ -1,0 +1,137 @@
+x-app-environment: &app-environment
+  DB_CONNECTION: mariadb
+  DB_HOST: db
+  DB_PORT: "3306"
+  DB_DATABASE: visitorportal
+  DB_USERNAME: visitor
+  DB_PASSWORD: visitor_pw
+  DB_QUEUE_RETRY_AFTER: "180"
+  HEALTH_CACHE_STORE: database
+  HEALTH_QUEUE_STALE_AFTER: "300"
+  HEALTH_SCHEDULER_STALE_AFTER: "300"
+  HEALTH_HEARTBEAT_TTL: "600"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/apache/Dockerfile
+    container_name: besucherportal-web
+    restart: unless-stopped
+    command: sh -c "php artisan storage:link && apache2-foreground"
+    ports:
+      - "8080:80"
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+      - mailhog
+    user: "${UID:-1000}:${GID:-1000}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/apache/Dockerfile
+    container_name: besucherportal-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=120 --max-time=3600 --max-jobs=1000 --memory=128
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    user: "${UID:-1000}:${GID:-1000}"
+    healthcheck:
+      test: ["CMD", "php", "artisan", "visitorportal:health", "queue"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/apache/Dockerfile
+    container_name: besucherportal-scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "${UID:-1000}:${GID:-1000}"
+    healthcheck:
+      test: ["CMD", "php", "artisan", "visitorportal:health", "scheduler"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+  db:
+    image: mariadb:11.4
+    container_name: besucherportal-db
+    environment:
+      MARIADB_DATABASE: visitorportal
+      MARIADB_USER: visitor
+      MARIADB_PASSWORD: visitor_pw
+      MARIADB_ROOT_PASSWORD: root_pw
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mariadb-admin" ,"ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 20s
+      retries: 3
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: besucherportal-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  node:
+    image: node:24-alpine
+    container_name: besucherportal-node
+    working_dir: /var/www/html/backend
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=false
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.32.0
+    container_name: besucherportal-gotenberg
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "--head", "-o", "/dev/null", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  dbdata:

@@ -1,0 +1,13 @@
+# Overlay para arrancar SIN datos de ejemplo (pruebas reales). Se suma a los dos archivos de la demo.
+# Usage: docker compose --env-file .env.demo -f docker-compose.demo.yml -f docker-compose.es.yml -f docker-compose.limpio.yml up -d
+# Lo usa limpiar-y-preparar.bat; no hace falta ejecutarlo a mano.
+services:
+  app:
+    environment:
+      AUTO_SEED: "false"
+  queue:
+    environment:
+      AUTO_SEED: "false"
+  scheduler:
+    environment:
+      AUTO_SEED: "false"

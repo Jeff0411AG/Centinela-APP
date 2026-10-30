@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 400" width="1100" height="400" shape-rendering="geometricPrecision">
+  <title>Centinela</title>
+  <path fill="#4f46e5" d="M180 20 L340 80 V200 C340 290 270 355 180 390 C90 355 20 290 20 200 V80 Z"/>
+  <path fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" d="M105 205 L162 262 L258 148"/>
+  <text x="400" y="248" fill="#f1f5f9" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="134" font-weight="700" textLength="670" lengthAdjust="spacingAndGlyphs">Centinela</text>
+</svg>

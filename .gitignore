@@ -1,0 +1,70 @@
+/vendor/
+backend/vendor/
+node_modules/
+backend/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Laravel 4 specific
+bootstrap/compiled.php
+app/storage/
+
+# Laravel 5 & Lumen specific
+public/storage
+public/hot
+
+# Laravel 5 & Lumen specific with changed public path
+public_html/storage
+public_html/hot
+
+storage/*.key
+
+# Real env files
+.env
+.env.*
+backend/.env
+backend/.env.*
+*.env
+
+# Example env files that should be committed
+!.env.example
+!.env.demo.example
+!backend/.env.example
+!backend/.env.production.example
+!backend/.env.demo.example
+!*.env.example
+!*.example.env
+
+Homestead.yaml
+Homestead.json
+/.vagrant
+.phpunit.result.cache
+
+/public/build
+/storage/pail
+.env.backup
+.env.production
+.phpactor.json
+auth.json
+/.idea/vcs.xml
+/.idea/remote-mappings.xml
+/.idea/prettier.xml
+/.idea/phpunit.xml
+/.idea/modules.xml
+/.idea/laravel-idea.xml
+/.idea/dataSources.xml
+/.idea/php.xml
+/.idea/Besucherportal.iml
+/.idea/.gitignore
+
+.idea/
+*.iml
+*Zone.Identifier
+*.phar
+
+# Centinela: no se publican las pruebas, la automatizacion del proyecto original ni datos reales
+/backend/tests/
+/.github/
+/datos-reales/
+/exploracion-tempus/
+*.csv

@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+@plugin "daisyui";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/* Theme tokens */
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* App entry */
+@import './themes/light.css';
+@import './themes/dark.css';
+@import './themes/true-black.css';
+@import './themes/tenant-example.css';
+@import './app/base.css';
+
+/* Logo switching via data-theme - CSS only */
+.logo-dark { display: none; }
+.logo-light { display: inline-block; }
+
+/* Explicit dark/true-black themes */
+[data-theme="dark"] .logo-light,
+[data-theme="true-black"] .logo-light { display: none; }
+
+[data-theme="dark"] .logo-dark,
+[data-theme="true-black"] .logo-dark { display: inline-block; }
+
+/* System theme support: media query for prefers-color-scheme */
+@media (prefers-color-scheme: dark) {
+    [data-theme="system"] .logo-light { display: none; }
+    [data-theme="system"] .logo-dark { display: inline-block; }
+}
+
+/* Force the light logo when printing */
+@media print {
+    .logo-dark { display: none !important; }
+    .logo-light { display: inline-block !important; }
+}
+
+.id-card-ready-text {
+    color: var(--color-info);
+}

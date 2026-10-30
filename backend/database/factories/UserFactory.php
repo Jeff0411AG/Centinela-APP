@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * SPDX-FileCopyrightText: 2026 Jonathan Läpple and VisitorPortal contributors
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+namespace Database\Factories;
+
+use App\Enums\GenderEnum;
+use App\Models\Site;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'site_id' => Site::default()->id,
+            'first_name' => $this->faker->firstName(),
+            'name' => $this->faker->lastName(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+            'gender' => GenderEnum::Male,
+            'is_active' => true,
+            'deactivated_at' => null,
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
